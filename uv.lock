@@ -298,7 +298,7 @@ wheels = [
 [[package]]
 name = "mpfutils"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "azure-cosmos" },
     { name = "azure-storage-blob" },
