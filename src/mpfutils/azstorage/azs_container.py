@@ -58,11 +58,9 @@ class AzsContainerClient:
         Returns:
             str: The URL of the uploaded blob.
 
-        Notes:
-            - The upload is performed with a maximum concurrency of 8 and a maximum blob size of 8 MB.
         """
         blob_client = self.container_client.get_blob_client(blob=blob_name)
-        blob_client.upload_blob(data, overwrite=overwrite, max_concurrency=8, max_blob_size=8*1024*1024)
+        blob_client.upload_blob(data, overwrite=overwrite)
         return blob_client.url
 
     def download_blob(self, container_name, blob_name):
