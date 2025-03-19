@@ -63,7 +63,7 @@ class AzsContainerClient:
         blob_client.upload_blob(data, overwrite=overwrite)
         return blob_client.url
 
-    def download_blob(self, container_name, blob_name):
+    def download_blob(self, blob_name):
         """
         Download the content of a blob from the container.
 
@@ -74,9 +74,50 @@ class AzsContainerClient:
 
         Returns:
             bytes: The content of the blob.
-
-        Notes:
-            - The 'container_name' parameter is included for potential future use, but it is unused in the current implementation.
         """
         blob_client = self.container_client.get_blob_client(blob=blob_name)
         return blob_client.download_blob().readall()
+
+    def list_blobs(self, prefix=None, include=None):
+        """
+        List blobs in the container.
+
+        Parameters:
+            prefix (str, optional): The prefix to filter blobs by name.
+            include (list, optional): Additional properties to include in the listing.
+
+        Returns:
+            list: A list of blob names in the container.
+
+        """
+        blobs = self.container_client.list_blobs(name_starts_with=prefix, include=include)
+        return blobs
+
+    def get_blob_url(self, blob_name):
+        """
+        Get the URL of a blob in the container.
+
+        Parameters:
+            blob_name (str): The name of the blob.
+
+        Returns:
+            str: The URL of the blob.
+        """
+        blob_client = self.container_client.get_blob_client(blob=blob_name)
+        return blob_client.url
+
+    def delete_blob(self, blob_name):
+        """
+        Delete a blob from the container.
+
+        Parameters:
+            blob_name (str): The name of the blob to delete.
+
+        Returns:
+            None
+        """
+        blob_client = self.container_client.get_blob_client(blob=blob_name)
+        blob_client.delete_blob()
+
+
+        
