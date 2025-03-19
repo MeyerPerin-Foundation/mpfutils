@@ -117,6 +117,7 @@ class AzsContainerClient:
             None
         """
         blob_client = self.container_client.get_blob_client(blob=blob_name)
+
         blob_client.delete_blob()
 
 

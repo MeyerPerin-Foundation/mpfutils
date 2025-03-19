@@ -144,10 +144,14 @@ class CosmosDBContainer:
             partition_key = item_id
         try:
             item = self.container.read_item(item=item_id, partition_key=partition_key)
-            return item
+            return item      
         except Exception as e:
-            logger.error(f"Error in CosmosDBContainer: {e}")
-            raise e
+            if "(NotFound)" in str(e):
+                logger.info(f"Item with ID {item_id} not found in CosmosDBContainer.")
+                return None
+            else:
+                logger.error(f"Error in CosmosDBContainer: {e}")
+                raise e
 
     def get_all_items(self, max_item_count: int = None, results_as_list: bool = True):
         """
