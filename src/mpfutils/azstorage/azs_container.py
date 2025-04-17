@@ -120,5 +120,18 @@ class AzsContainerClient:
 
         blob_client.delete_blob()
 
+    def blob_exists(self, blob_name):
+        """
+        Check if a blob exists in the container.
+
+        Parameters:
+            blob_name (str): The name of the blob.
+
+        Returns:
+            bool: True if the blob exists, False otherwise.
+        """
+        return self.container_client.get_blob_client(blob=blob_name).exists()
+            
+        
 
         

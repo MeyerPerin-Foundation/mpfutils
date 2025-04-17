@@ -8,6 +8,7 @@ authentication, and provides methods to run queries and perform CRUD operations.
 """
 
 from azure.cosmos import CosmosClient
+from azure.identity import DefaultAzureCredential
 import logging
 import os
 
@@ -22,7 +23,7 @@ class CosmosDBContainer:
     or retrieve all items from a container in a CosmosDB database.
     """
 
-    def __init__(self, database_name: str, container_name: str, endpoint: str = None, key: str = None, conn_str: str = None):
+    def __init__(self, database_name: str, container_name: str, endpoint: str = None, key: str = None, conn_str: str = None, use_azure_identity: bool = False):
         """
         Initialize the CosmosDBContainer.
 
@@ -46,6 +47,10 @@ class CosmosDBContainer:
         if conn_str:
             logger.info("Using connection string to connect to CosmosDB")
             client = CosmosClient.from_connection_string(conn_str)
+        elif endpoint and use_azure_identity:
+            logger.info("Using Azure Identity for authentication")
+            credential = DefaultAzureCredential()
+            client = CosmosClient(endpoint, credential=credential)
         else:
             logger.info("Using endpoint and key to connect to CosmosDB")
             client = CosmosClient(endpoint, key)
