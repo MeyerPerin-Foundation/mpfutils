@@ -1,7 +1,7 @@
 [project]
 name = "mpfutils"
-version = "0.4.3"
-description = "Utilities used in projects by the MeyerPerin Foundation"
+version = "0.4.6"
+description = "Utilities used in projects by Lucas A. Meyer and the MeyerPerin Foundation"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

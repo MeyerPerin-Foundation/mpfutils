@@ -4,9 +4,11 @@ It defines the AzsContainerClient class, which allows you to upload and download
 using either a connection string or a SAS URL.
 """
 
-from azure.storage.blob import BlobServiceClient, ContainerClient
+from azure.storage.blob import BlobServiceClient, ContainerClient, ContentSettings
 import logging
 import os
+from pathlib import Path
+from azure.core.exceptions import ResourceExistsError, HttpResponseError, ResourceNotFoundError
 
 logger = logging.getLogger("mpf-utils.azstorage")
 
@@ -46,7 +48,7 @@ class AzsContainerClient:
             logger.info("Using SAS URL to connect to Azure Storage")
             self.container_client = ContainerClient.from_container_url(sas_url)
         
-    def upload_blob(self, blob_name, data, overwrite=True):
+    def upload_blob(self, blob_name, data, overwrite=True, content_type=None):
         """
         Upload data to a blob within the container.
 
@@ -54,29 +56,70 @@ class AzsContainerClient:
             blob_name (str): The name of the blob to be created or overwritten.
             data (bytes or str): The data to upload to the blob.
             overwrite (bool, optional): Whether to overwrite an existing blob with the same name. Defaults to True.
+            content_type (str, optional): The content type of the blob. Defaults to None.
 
         Returns:
             str: The URL of the uploaded blob.
 
         """
+        if content_type is None:
+            content_type = "application/octet-stream" if isinstance(data, bytes) else "text/plain"
+
         blob_client = self.container_client.get_blob_client(blob=blob_name)
-        blob_client.upload_blob(data, overwrite=overwrite)
+        blob_client.upload_blob(data, overwrite=overwrite, content_settings=ContentSettings(content_type=content_type))
         return blob_client.url
 
-    def download_blob(self, blob_name):
-        """
-        Download the content of a blob from the container.
 
-        Parameters:
-            container_name (str): The name of the container. 
-                Note: This parameter is currently not used since the container is already specified during initialization.
-            blob_name (str): The name of the blob to download.
 
-        Returns:
-            bytes: The content of the blob.
+    def download_blob(self,
+                  blob_name: str,
+                  dest_path: str | Path | None = None,
+                  *,
+                  max_concurrency: int = 4) -> Path:
         """
-        blob_client = self.container_client.get_blob_client(blob=blob_name)
-        return blob_client.download_blob().readall()
+        Download *blob_name* from this container and save it to *dest_path*.
+
+        Parameters
+        ----------
+        blob_name : str
+            Name of the blob in Azure Storage (e.g. "reports/2025-Q1.csv").
+        dest_path : str | Path | None, optional
+            Where to save the file locally.  If None (default) the blob is written
+            to `Path.cwd() / Path(blob_name).name` – i.e. the current directory
+            under its leaf-filename.
+        max_concurrency : int, optional
+            Parallel range-GET requests used by the SDK.  Increase for faster
+            transfers on high-bandwidth links.
+
+        Returns
+        -------
+        pathlib.Path
+            The absolute path of the file that was written.
+
+        Raises
+        ------
+        ResourceNotFoundError
+            If the blob does not exist.
+        HttpResponseError
+            For other I/O or network-level failures.
+        """
+        # Determine local destination
+        if dest_path is None:
+            dest_path = Path.cwd() / Path(blob_name).name
+        else:
+            dest_path = Path(dest_path)
+
+        dest_path.parent.mkdir(parents=True, exist_ok=True)  # ensure directory
+
+        # Stream the blob directly into the file
+        blob_client = self.container_client.get_blob_client(blob_name)
+        downloader = blob_client.download_blob(max_concurrency=max_concurrency)
+
+        with dest_path.open("wb") as fh:
+            downloader.readinto(fh)
+
+        return dest_path
+
 
     def list_blobs(self, prefix=None, include=None):
         """

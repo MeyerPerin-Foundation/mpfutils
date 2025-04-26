@@ -12,8 +12,12 @@ from azure.identity import DefaultAzureCredential
 import logging
 import os
 
-logger = logging.getLogger("mpf-utils.cosmosdb")
+import uuid
+from pathlib import Path
+from urllib.parse import urlparse
 
+
+logger = logging.getLogger("mpf-utils.cosmosdb")
 
 class CosmosDBContainer:
     """
@@ -182,3 +186,23 @@ class CosmosDBContainer:
             logger.error(f"Error in CosmosDBContainer: {e}")
             raise e
             
+    def _to_url(self, value: str | Path) -> str:
+        """Return an absolute URL for *value*.
+
+        * If *value* already has a URI scheme (e.g. ``https://`` or ``file://``),
+        it is returned untouched.
+        * Otherwise it is treated as a local path and converted to a RFC 8089
+        ``file://`` URL.
+        """
+        value = str(value)
+        if urlparse(value).scheme:         # already looks like a URL
+            return value
+
+        # Local path → absolute file:// URL
+        return Path(value).expanduser().resolve().as_uri()   # yields file://…
+
+
+    def make_id(self, resource: str | Path) -> str:
+        """Deterministically map *resource* → UUID-5 string."""
+        url = self._to_url(resource)                    
+        return str(uuid.uuid5(uuid.NAMESPACE_URL, url))
